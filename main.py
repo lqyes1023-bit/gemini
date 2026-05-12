@@ -90,19 +90,23 @@ def ask_gemini(user_text):
 def webhook():
     try:
         data = request.get_json()
-        if "message" in data and "text" in data["message"]:
-            text = data["message"]["text"]
-            chat_id = data["message"]["chat"]["id"]
 
-            # GS 开始思考并穿越维度
-            reply = ask_gemini(text)
+        message = data.get("message", {})
+        text = message.get("text", "")
+        chat_id = message.get("chat", {}).get("id")
 
-            # 发送回 Telegram
-            bot.send_message(chat_id=chat_id, text=reply)
+        if not text or not chat_id:
+            return "ignored", 200
+
+        reply = ask_gemini(text)
+
+        bot.send_message(chat_id=chat_id, text=reply)
+
+        return "ok", 200
+
     except Exception as e:
-        print(f"Error: {e}")
-
-    return "ok"
+        print("WEBHOOK ERROR:", str(e))
+        return str(e), 500
 
 # =====================
 # MANUAL TEST

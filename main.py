@@ -89,35 +89,32 @@ def ask_gemini(user_text):
 @app.route("/webhook", methods=["POST"])
 def webhook():
     try:
-        print("STEP 1: received")
-
-        data = request.get_json()
-        print("STEP 2: json ok")
+        data = request.get_json(force=True)
 
         message = data.get("message", {})
         text = message.get("text")
         chat_id = message.get("chat", {}).get("id")
 
-        print("STEP 3:", text)
-
-        if not text:
+        if not text or not chat_id:
             return "ignored", 200
 
-        print("STEP 4: calling gemini")
+        print("USER:", text)
 
-        reply = ask_gemini(text)
+        # ===== Gemini =====
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(text)
 
-        print("STEP 5: reply ok", reply)
+        reply = response.text
+
+        print("REPLY:", reply)
 
         bot.send_message(chat_id=chat_id, text=reply)
-
-        print("STEP 6: sent")
 
         return "ok", 200
 
     except Exception as e:
-        print("🔥 WEBHOOK CRASH:", str(e))
-        return str(e), 500
+        print("🔥 ERROR:", repr(e))
+        return "error", 500
 # =====================
 # MANUAL TEST
 # =====================

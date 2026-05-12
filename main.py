@@ -89,25 +89,35 @@ def ask_gemini(user_text):
 @app.route("/webhook", methods=["POST"])
 def webhook():
     try:
+        print("STEP 1: received")
+
         data = request.get_json()
+        print("STEP 2: json ok")
 
         message = data.get("message", {})
-        text = message.get("text", "")
+        text = message.get("text")
         chat_id = message.get("chat", {}).get("id")
 
-        if not text or not chat_id:
+        print("STEP 3:", text)
+
+        if not text:
             return "ignored", 200
+
+        print("STEP 4: calling gemini")
 
         reply = ask_gemini(text)
 
+        print("STEP 5: reply ok", reply)
+
         bot.send_message(chat_id=chat_id, text=reply)
+
+        print("STEP 6: sent")
 
         return "ok", 200
 
     except Exception as e:
-        print("WEBHOOK ERROR:", str(e))
+        print("🔥 WEBHOOK CRASH:", str(e))
         return str(e), 500
-
 # =====================
 # MANUAL TEST
 # =====================

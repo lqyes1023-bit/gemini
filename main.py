@@ -97,6 +97,9 @@ MEMORY_KEYWORDS = [
 # MEMORY FILTER
 # =====================
 def should_extract_memory(text):
+    # 如果字数太短（小于等于你设定的 6 个字），直接返回 False，绝不调用 AI 提取记忆，省下大笔 Token
+    if len(text) <= SHORT_MSG_LIMIT:
+        return False
     return len(text) >= 8 and any(k in text for k in MEMORY_KEYWORDS)
 
 # =====================

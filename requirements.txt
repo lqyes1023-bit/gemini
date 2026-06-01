@@ -1,3 +1,4 @@
-flask
+google-genai
 python-telegram-bot
-google-generativeai
+flask
+google-cloud-storage

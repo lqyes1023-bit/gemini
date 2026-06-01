@@ -1,0 +1,21 @@
+{
+  "short_memory_limit": 6,
+  "max_history_turns": 4,
+  "memory_keywords": [
+    "喜欢",
+    "讨厌",
+    "害怕",
+    "习惯",
+    "生日",
+    "工作",
+    "家人",
+    "目标",
+    "梦想",
+    "从小",
+    "一直",
+    "想要",
+    "请记住"
+  ],
+  "enable_ai_memory_extraction": true,
+  "enable_life_log": true
+}

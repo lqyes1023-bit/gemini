@@ -217,7 +217,13 @@ def build_history_text(history):
 # GEMINI CORE
 # =====================
 def ask_gemini(text):
-
+# 如果用户发的话少于 6 个字，直接跳过记忆提取和检索逻辑，直接拿历史记录去问 Gemini
+        if len(text) > SHORT_MSG_LIMIT:
+            if should_extract_memory(text):
+                # ... 跑原来的记忆提取逻辑
+            relevant = retrieve_memory(text, memory)
+        else:
+            relevant = []  # 短消息不携带相关记忆，只带上下文聊天历史
     try:
         memory = load_json_gcs("memory.json", {})
         life_log = load_json_gcs("life_log.json", {})

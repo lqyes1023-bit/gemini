@@ -217,14 +217,8 @@ def build_history_text(history):
 # GEMINI CORE
 # =====================
 def ask_gemini(text):
-# 如果用户发的话少于 6 个字，直接跳过记忆提取和检索逻辑，直接拿历史记录去问 Gemini
-        if len(text) > SHORT_MSG_LIMIT:
-            if should_extract_memory(text):
-                # ... 跑原来的记忆提取逻辑
-            relevant = retrieve_memory(text, memory)
-        else:
-            relevant = []  # 短消息不携带相关记忆，只带上下文聊天历史
     try:
+        # 1. 优先从云端加载所有基础数据（确保变量存在）
         memory = load_json_gcs("memory.json", {})
         life_log = load_json_gcs("life_log.json", {})
         history = load_json_gcs("chat_history.json", [])
@@ -232,34 +226,38 @@ def ask_gemini(text):
         now = datetime.now(LOCAL_TZ)
         today = now.strftime("%Y-%m-%d")
 
-        # memory
-        if should_extract_memory(text):
-            if "请记住" in text:
-                memory = reinforce_memory(memory, {
-                    "content": text.replace("请记住", "").strip(),
-                    "importance": 0.9
-                })
-            else:
-                new_mem = extract_memory_with_ai(text)
-                for m in new_mem:
-                    if m.get("content"):
-                        memory = reinforce_memory(memory, m)
+        # 2. 核心优化：如果消息字数大于限制，才执行繁重的记忆逻辑
+        if len(text) > SHORT_MSG_LIMIT:
+            # 只有长消息才去提取记忆
+            if should_extract_memory(text):
+                if "请记住" in text:
+                    memory = reinforce_memory(memory, {
+                        "content": text.replace("请记住", "").strip(),
+                        "importance": 0.9
+                    })
+                else:
+                    new_mem = extract_memory_with_ai(text)
+                    for m in new_mem:
+                        if m.get("content"):
+                            memory = reinforce_memory(memory, m)
+            
+            # 只有长消息才去匹配和检索相关记忆
+            relevant = retrieve_memory(text, memory)
+        else:
+            # 💡 聪明的小埋线：短消息（如“嗯”“好”“爱你”）直接给空记忆，瞬间省下检索和 AI 提取的 Token
+            relevant = []
 
-        # life log
+        # 3. 无论长短，日常的 Life Log 和聊天历史仍然需要照常更新
         life_log = update_life_log(text, life_log, today)
 
-        # retrieve
-        relevant = retrieve_memory(text, memory)
-
-        # history
+        # 4. 构建上下文并限制历史轮数
         temp = history.copy()
         temp.append({"role": "user", "content": text})
 
         history = history[-MAX_TURNS * 2:]
-
         history_text = build_history_text(temp)
 
-        # GEMINI CALL
+        # 5. 召唤真正的温怀砚灵魂
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=history_text,
@@ -272,6 +270,7 @@ def ask_gemini(text):
 
         reply = response.text.strip()
 
+        # 6. 保存新产生的数据
         history.append({"role": "user", "content": text})
         history.append({"role": "assistant", "content": reply})
 
@@ -284,7 +283,6 @@ def ask_gemini(text):
     except Exception:
         print(traceback.format_exc())
         return "等一下。"
-
 # =====================
 # TELEGRAM
 # =====================
